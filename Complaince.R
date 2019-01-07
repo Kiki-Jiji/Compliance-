@@ -1,20 +1,31 @@
 
 dir()
 
-#USe readlxl to import survey data into R
+#USe XLConnect to import survey data into R
+
+install.packages("XLConnect")
 
 library(readxl)
 
+
 #Read in raw survey data, file name in brackets, will need to be changed. Assumes file is in the directory, if not change directory or add file path  
 
-excel_sheets("Survey_127.xlsx")
+excel_sheets("Survey_example.xlsx")
 
-Data <- read_excel("Survey_127.xlsx",
-           sheet=1, 
-           col_names= c("Reference Number", "Attachments", "Admin/ secretarial", "Managers/ senior officials", "Directors/ chief executives", "Associate Professional", "Professional", "Other", "Other (please specify)", "Total time taken to complete Hours", "Total time taken to complete Mins", "External Costs Y", "External Costs False", "Accountant/ Bookkeeper", "Other", "Other (please specify)", "Accountant/ Bookkeeper £", "Accountant/ Bookkeeper p", "Other £", "Other p"),
-           skip=5)
+Data <- read_excel("Survey_1example.xlsx",
+                   sheet=1, 
+                   col_names= c("Reference Number", "Attachments", "Admin/ secretarial", "Managers/ senior officials", "Directors/ chief executives", "Associate Professional", "Professional", "Other", "Other (please specify)", "Total time taken to complete Hours", "Total time taken to complete Mins", "External Costs Y", "External Costs False", "Accountant/ Bookkeeper", "Other", "Other (please specify)", "Accountant/ Bookkeeper £", "Accountant/ Bookkeeper p", "Other £", "Other p"),
+                   skip=5,
+                   na= "")
 
 excel_sheets("ASHE.xlsx")
+
+#Set all na to zero, be careful!! 
+Data[is.na(Data)] <- 0
+
+
+View(head(Data, n=15))
+
 
 #wage data, used for weighed average hourly rate 
 #pehaps redudant, might be easier to manually create a data frame with relevant data, might be more robust? 
@@ -36,6 +47,8 @@ Data[10:18] <- NULL
 #Time is given in two columns, 1 for hours the other for minutes. First blank values are read in as NA, these need converting to 0. 
 #Then Hours converted to min , then hours in min added to min to get total time in minutes. Then median is found. 
 
+#check this median time, becuase converted all NA to 0 in new code
+
 Total_Minutes <- Data$`Total time taken to complete Hours`
 Total_Minutes[is.na(Total_Minutes)] <- 0
 Data$`Total time taken to complete Mins`[is.na(Data$`Total time taken to complete Mins`)] <- 0
@@ -49,12 +62,19 @@ median(Data$Total_Min, na.rm = T)
 # Count number of each occupation, so count number of x's in each job occupation column 
 #Defintely a bad way of doing this, rather than repeat this 5 times, use apply function to do it in one line! But i'm so confused and stuck :( help!
 
+#    Admin_num <- length(grep("X", Data$`Admin/ secretarial`))
+#    Man_num <- length(grep("X", Data$`Managers/ senior officials`))
+#    Dir_num <- length(grep("X", Data$`Directors/ chief executives`))
+#    Associate_num <- length(grep("X", Data$`Associate Professional`))
+#     Prof_num <- length(grep("X", Data$Professional))
 
-Admin_num <- length(grep("X", Data$`Admin/ secretarial`))
-Man_num <- length(grep("X", Data$`Managers/ senior officials`))
-Dir_num <- length(grep("X", Data$`Directors/ chief executives`))
-Associate_num <- length(grep("X", Data$`Associate Professional`))
-Prof_num <- length(grep("X", Data$Professional))
+#expiment 
+#return pb as class list! need to unlist
+
+pb <- vapply(Data[3:7], str_detect, "X")
+ 
+num_occ <- colSums(pb)
+
 
 #block above needs replacing with, as already said, an apply function
 
@@ -66,8 +86,7 @@ per_occ <- num_occ/sum(num_occ)
 whr <- sum(per_occ*Wages$`Hourly rate`)
 whr
 
-
-
+per_occ
 
 
 
